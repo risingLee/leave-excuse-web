@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>请假理由生成器 - 高通过率请假话术</title>
-  <meta name="description" content="不知道怎么请假？输入请假类型，一键生成高通过率的请假理由，直接复制发给领导。">
+  <title>LeaveExcuse AI - Professional Leave Request Generator</title>
+  <meta name="description" content="Generate believable, professional leave excuses. Handle sick days, personal time, and emergencies with confidence.">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -13,9 +13,28 @@
       min-height: 100vh; color: #333;
     }
     .container { max-width: 520px; margin: 0 auto; padding: 24px 16px 80px; }
+
+    /* Language switcher */
+    .lang-switch {
+      position: fixed; top: 16px; right: 16px; z-index: 100;
+      display: flex; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 20px; overflow: hidden;
+    }
+    .lang-btn {
+      padding: 6px 14px; font-size: 12px; color: rgba(255,255,255,0.7);
+      cursor: pointer; transition: all 0.15s; border: none; background: none;
+    }
+    .lang-btn.active { background: rgba(255,255,255,0.3); color: #fff; font-weight: 600; }
+
     .header { text-align: center; padding: 32px 0 24px; }
     .header h1 { font-size: 28px; color: #fff; font-weight: 700; }
+    .header .accent { color: #f7b731; }
     .header p { color: rgba(255,255,255,0.8); font-size: 14px; margin-top: 6px; }
+    .badge {
+      display: inline-block; margin-top: 12px; padding: 6px 16px;
+      background: rgba(247,183,49,0.15); border: 1px solid rgba(247,183,49,0.3);
+      border-radius: 20px; font-size: 12px; color: #f7b731;
+    }
 
     .card {
       background: #fff; border-radius: 20px; padding: 24px;
@@ -23,7 +42,6 @@
     }
     .card-title { font-size: 15px; font-weight: 600; margin-bottom: 14px; color: #2d3436; }
 
-    /* 请假类型 */
     .type-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
     .type-item {
       text-align: center; padding: 16px 8px; border: 2px solid #eee;
@@ -36,7 +54,6 @@
     .type-desc { font-size: 11px; color: #b2bec3; margin-top: 2px; }
     .type-item.active .type-desc { color: #00b894; }
 
-    /* 公司风格 */
     .style-list { display: flex; gap: 10px; }
     .style-item {
       flex: 1; text-align: center; padding: 14px 8px; border: 2px solid #eee;
@@ -48,17 +65,14 @@
     .style-desc { font-size: 11px; color: #b2bec3; margin-top: 2px; }
     .style-item.active .style-desc { color: #00b894; }
 
-    /* 国家选择 */
     .country-select {
       width: 100%; padding: 12px 14px; border: 2px solid #eee; border-radius: 12px;
-      font-size: 15px; outline: none; background: #fff; appearance: none;
+      font-size: 15px; outline: none; background: #fff; appearance: none; cursor: pointer;
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' fill='none' stroke='%23999' stroke-width='1.5'/%3E%3C/svg%3E");
       background-repeat: no-repeat; background-position: right 14px center;
-      cursor: pointer;
     }
     .country-select:focus { border-color: #00b894; }
 
-    /* 补充信息 */
     .extra-input {
       width: 100%; padding: 12px 14px; border: 2px solid #eee; border-radius: 12px;
       font-size: 14px; outline: none; font-family: inherit; resize: none;
@@ -66,7 +80,15 @@
     }
     .extra-input:focus { border-color: #00b894; }
 
-    /* 按钮 */
+    .tips { margin-top: 8px; }
+    .tips-label { font-size: 13px; color: rgba(255,255,255,0.7); margin-bottom: 10px; }
+    .tip-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .tip-chip {
+      padding: 8px 14px; background: rgba(255,255,255,0.95); border: 1px solid #e0e0e0;
+      border-radius: 12px; font-size: 13px; color: #636e72; cursor: pointer; transition: all 0.15s;
+    }
+    .tip-chip:hover { border-color: #00b894; color: #00b894; }
+
     .generate-btn {
       width: 100%; padding: 16px; background: linear-gradient(135deg, #00b894, #00cec9);
       color: #fff; font-size: 17px; font-weight: 600; border: none; border-radius: 40px;
@@ -83,7 +105,6 @@
     }
     @keyframes pulse { from { opacity: 0.3; transform: scale(0.8); } to { opacity: 1; transform: scale(1.2); } }
 
-    /* 结果 */
     .results-section { display: none; margin-top: 8px; }
     .results-section.show { display: block; animation: fadeIn 0.3s ease; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -115,7 +136,10 @@
       padding: 10px 20px; background: rgba(255,255,255,0.95); border: 1px solid #e0e0e0;
       border-radius: 24px; font-size: 13px; color: #636e72; cursor: pointer; transition: all 0.15s;
     }
-    .action-btn:hover { border-color: #00b894; color: #00b894; background: #e8fff8; }
+    .action-btn:hover { border-color: #00b894; color: #00b894; }
+
+    .footer { text-align: center; padding: 32px 0 16px; }
+    .footer-text { font-size: 12px; color: rgba(255,255,255,0.5); }
 
     .error-msg {
       display: none; padding: 12px 16px; background: #fff5f5; border: 1px solid #feb2b2;
@@ -123,172 +147,269 @@
     }
     .error-msg.show { display: block; }
 
-    .footer { text-align: center; padding: 32px 0 16px; }
-    .footer-text { font-size: 12px; color: rgba(255,255,255,0.5); }
-
     .toast {
       position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
       background: rgba(0,0,0,0.75); color: #fff; padding: 12px 28px; border-radius: 8px;
       font-size: 14px; z-index: 999; display: none;
     }
     .toast.show { display: block; animation: fadeIn 0.2s ease; }
-
-    /* 小贴士 */
-    .tips { margin-top: 8px; }
-    .tips-label { font-size: 13px; color: rgba(255,255,255,0.7); margin-bottom: 10px; }
-    .tip-chips { display: flex; flex-wrap: wrap; gap: 8px; }
-    .tip-chip {
-      padding: 8px 14px; background: rgba(255,255,255,0.95); border: 1px solid #e0e0e0;
-      border-radius: 12px; font-size: 13px; color: #636e72; cursor: pointer; transition: all 0.15s;
-    }
-    .tip-chip:hover { border-color: #00b894; color: #00b894; }
   </style>
 </head>
 <body>
+  <div class="lang-switch">
+    <button class="lang-btn active" data-lang="en" onclick="switchLang('en')">EN</button>
+    <button class="lang-btn" data-lang="zh" onclick="switchLang('zh')">中文</button>
+  </div>
+
   <div class="container">
     <div class="header">
-      <h1>📋 请假理由生成器</h1>
-      <p>一键生成高通过率请假话术</p>
+      <h1>📋 Leave<span class="accent">Excuse</span> AI</h1>
+      <p data-i18n="subtitle">Generate believable leave requests.<br>Handle sick days, personal time, and emergencies.</p>
+      <div class="badge" data-i18n="badge">🚀 Free to use</div>
     </div>
 
-    <!-- 请假类型 -->
+    <!-- Leave Type -->
     <div class="card">
-      <div class="card-title">🏷️ 请假类型</div>
+      <div class="card-title" data-i18n="typeTitle">🏷️ Leave Type</div>
       <div class="type-grid">
-        <div class="type-item active" data-type="病假" onclick="selectType(this)">
+        <div class="type-item active" data-type="Sick Leave" onclick="selectType(this)">
           <div class="type-icon">🤒</div>
-          <div class="type-label">病假</div>
-          <div class="type-desc">身体不舒服</div>
+          <div class="type-label" data-i18n="type1">Sick</div>
+          <div class="type-desc" data-i18n="type1Desc">Not feeling well</div>
         </div>
-        <div class="type-item" data-type="事假" onclick="selectType(this)">
+        <div class="type-item" data-type="Personal Leave" onclick="selectType(this)">
           <div class="type-icon">📋</div>
-          <div class="type-label">事假</div>
-          <div class="type-desc">私人事务</div>
+          <div class="type-label" data-i18n="type2">Personal</div>
+          <div class="type-desc" data-i18n="type2Desc">Private matters</div>
         </div>
-        <div class="type-item" data-type="临时请假" onclick="selectType(this)">
+        <div class="type-item" data-type="Emergency" onclick="selectType(this)">
           <div class="type-icon">⚡</div>
-          <div class="type-label">临时</div>
-          <div class="type-desc">突发情况</div>
+          <div class="type-label" data-i18n="type3">Emergency</div>
+          <div class="type-desc" data-i18n="type3Desc">Urgent situation</div>
         </div>
-        <div class="type-item" data-type="年假" onclick="selectType(this)">
+        <div class="type-item" data-type="Vacation" onclick="selectType(this)">
           <div class="type-icon">🏖️</div>
-          <div class="type-label">年假</div>
-          <div class="type-desc">带薪休息</div>
+          <div class="type-label" data-i18n="type4">Vacation</div>
+          <div class="type-desc" data-i18n="type4Desc">Paid time off</div>
         </div>
-        <div class="type-item" data-type="家庭原因" onclick="selectType(this)">
+        <div class="type-item" data-type="Family" onclick="selectType(this)">
           <div class="type-icon">👨‍👩‍👧</div>
-          <div class="type-label">家庭</div>
-          <div class="type-desc">家里有事</div>
+          <div class="type-label" data-i18n="type5">Family</div>
+          <div class="type-desc" data-i18n="type5Desc">Family matters</div>
         </div>
-        <div class="type-item" data-type="心理健康假" onclick="selectType(this)">
+        <div class="type-item" data-type="Mental Health" onclick="selectType(this)">
           <div class="type-icon">🧘</div>
-          <div class="type-label">心理健康</div>
-          <div class="type-desc">需要休息</div>
+          <div class="type-label" data-i18n="type6">Mental</div>
+          <div class="type-desc" data-i18n="type6Desc">Need rest</div>
         </div>
       </div>
     </div>
 
-    <!-- 公司风格 -->
+    <!-- Company Style -->
     <div class="card">
-      <div class="card-title">🏢 公司氛围</div>
+      <div class="card-title" data-i18n="styleTitle">🏢 Company Culture</div>
       <div class="style-list">
-        <div class="style-item" data-style="严格" onclick="selectStyle(this)">
-          <div class="style-label">🏛️ 严格</div>
-          <div class="style-desc">国企/外企/大厂</div>
+        <div class="style-item" data-style="Strict" onclick="selectStyle(this)">
+          <div class="style-label" data-i18n="style1">🏛️ Strict</div>
+          <div class="style-desc" data-i18n="style1Desc">Corporate/Big tech</div>
         </div>
-        <div class="style-item active" data-style="一般" onclick="selectStyle(this)">
-          <div class="style-label">🏬 一般</div>
-          <div class="style-desc">普通公司</div>
+        <div class="style-item active" data-style="Standard" onclick="selectStyle(this)">
+          <div class="style-label" data-i18n="style2">🏬 Standard</div>
+          <div class="style-desc" data-i18n="style2Desc">Regular company</div>
         </div>
-        <div class="style-item" data-style="宽松" onclick="selectStyle(this)">
-          <div class="style-label">🏠 宽松</div>
-          <div class="style-desc">创业/小团队</div>
+        <div class="style-item" data-style="Relaxed" onclick="selectStyle(this)">
+          <div class="style-label" data-i18n="style3">🏠 Relaxed</div>
+          <div class="style-desc" data-i18n="style3Desc">Startup/Small team</div>
         </div>
       </div>
     </div>
 
-    <!-- 国家 + 补充 -->
+    <!-- Country + Extra -->
     <div class="card">
-      <div class="card-title">🌍 所在地区</div>
+      <div class="card-title" data-i18n="countryTitle">🌍 Location</div>
       <select class="country-select" id="country">
-        <option value="中国">🇨🇳 中国</option>
-        <option value="美国">🇺🇸 美国</option>
-        <option value="日本">🇯🇵 日本</option>
-        <option value="韩国">🇰🇷 韩国</option>
-        <option value="英国">🇬🇧 英国</option>
-        <option value="澳大利亚">🇦🇺 澳大利亚</option>
-        <option value="新加坡">🇸🇬 新加坡</option>
-        <option value="德国">🇩🇪 德国</option>
-        <option value="其他">🌐 其他</option>
+        <option value="USA">🇺🇸 United States</option>
+        <option value="China">🇨🇳 China</option>
+        <option value="UK">🇬🇧 United Kingdom</option>
+        <option value="Japan">🇯🇵 Japan</option>
+        <option value="Germany">🇩🇪 Germany</option>
+        <option value="Australia">🇦🇺 Australia</option>
+        <option value="Canada">🇨🇦 Canada</option>
+        <option value="Other">🌐 Other</option>
       </select>
       <div style="margin-top: 14px;">
-        <div class="card-title">💬 补充信息（可选）</div>
-        <textarea class="extra-input" id="extraInfo" placeholder="比如：请半天假、已经请过一次了、领导比较严..."></textarea>
+        <div class="card-title" data-i18n="extraTitle">💬 Extra Info (Optional)</div>
+        <textarea class="extra-input" id="extraInfo" data-i18n-placeholder="extraPlaceholder" placeholder="e.g. Need half day, already took leave this month, strict manager..."></textarea>
       </div>
     </div>
 
-    <!-- 小贴士 -->
+    <!-- Tips -->
     <div class="tips">
-      <div class="tips-label">💡 热门场景</div>
+      <div class="tips-label" data-i18n="tipsLabel">💡 Popular Scenarios</div>
       <div class="tip-chips">
-        <div class="tip-chip" onclick="quickFill('病假','一般','想请明天一天')">明天想请病假</div>
-        <div class="tip-chip" onclick="quickFill('临时请假','严格','下午要走')">下午临时有事</div>
-        <div class="tip-chip" onclick="quickFill('事假','宽松','搬家')">搬家请一天</div>
+        <div class="tip-chip" onclick="quickFill('Sick Leave','Standard','Need tomorrow off')" data-i18n="tip1">Sick tomorrow</div>
+        <div class="tip-chip" onclick="quickFill('Emergency','Strict','Need to leave this afternoon')" data-i18n="tip2">Emergency today</div>
+        <div class="tip-chip" onclick="quickFill('Personal Leave','Relaxed','Moving house')" data-i18n="tip3">Moving day</div>
       </div>
     </div>
 
     <div class="error-msg" id="errorMsg"></div>
 
-    <button class="generate-btn" id="generateBtn" onclick="generate()">✨ 生成请假理由</button>
+    <button class="generate-btn" id="generateBtn" data-i18n="btnGenerate" onclick="generate()">✨ Generate Leave Request</button>
 
-    <!-- 结果 -->
+    <!-- Results -->
     <div class="results-section" id="results">
-      <div class="results-title">📤 三种请假话术</div>
+      <div class="results-title" data-i18n="resultsTitle">📤 Your Messages</div>
 
       <div class="result-card formal">
         <div class="result-header">
-          <span class="result-tag tag-formal">📝 正式版</span>
-          <span class="result-hint">适合严格公司</span>
+          <span class="result-tag tag-formal" data-i18n="tagFormal">📝 Formal</span>
+          <span class="result-hint" data-i18n="hintFormal">For strict companies</span>
         </div>
         <div class="result-text" id="formalText"></div>
-        <div class="copy-btn" onclick="copyText('formalText')">📋 复制</div>
+        <div class="copy-btn" onclick="copyText('formalText')">📋 <span data-i18n="copy">Copy</span></div>
       </div>
 
       <div class="result-card casual">
         <div class="result-header">
-          <span class="result-tag tag-casual">😊 轻松版</span>
-          <span class="result-hint">适合氛围好的公司</span>
+          <span class="result-tag tag-casual" data-i18n="tagCasual">😊 Casual</span>
+          <span class="result-hint" data-i18n="hintCasual">For relaxed companies</span>
         </div>
         <div class="result-text" id="casualText"></div>
-        <div class="copy-btn" onclick="copyText('casualText')">📋 复制</div>
+        <div class="copy-btn" onclick="copyText('casualText')">📋 <span data-i18n="copy">Copy</span></div>
       </div>
 
       <div class="result-card emergency">
         <div class="result-header">
-          <span class="result-tag tag-emergency">⚡ 紧急版</span>
-          <span class="result-hint">临时突发直接发</span>
+          <span class="result-tag tag-emergency" data-i18n="tagUrgent">⚡ Urgent</span>
+          <span class="result-hint" data-i18n="hintUrgent">Short & direct</span>
         </div>
         <div class="result-text" id="emergencyText"></div>
-        <div class="copy-btn" onclick="copyText('emergencyText')">📋 复制</div>
+        <div class="copy-btn" onclick="copyText('emergencyText')">📋 <span data-i18n="copy">Copy</span></div>
       </div>
 
       <div class="result-actions">
-        <div class="action-btn" onclick="retry()">🔄 换一批</div>
-        <div class="action-btn" onclick="share()">📤 分享</div>
+        <div class="action-btn" data-i18n="regenerate" onclick="retry()">🔄 Regenerate</div>
+        <div class="action-btn" data-i18n="share" onclick="share()">📤 Share</div>
       </div>
     </div>
 
     <div class="footer">
-      <div class="footer-text">智能匹配请假话术，助你体面请假 ✌️</div>
+      <div class="footer-text" data-i18n="footer">Smart leave requests · Free · No signup</div>
     </div>
   </div>
 
   <div class="toast" id="toast"></div>
 
   <script>
-    let selectedType = '病假';
-    let selectedStyle = '一般';
+    const i18n = {
+      en: {
+        subtitle: "Generate believable leave requests.<br>Handle sick days, personal time, and emergencies.",
+        badge: "🚀 Free to use",
+        typeTitle: "🏷️ Leave Type",
+        type1: "Sick", type1Desc: "Not feeling well",
+        type2: "Personal", type2Desc: "Private matters",
+        type3: "Emergency", type3Desc: "Urgent situation",
+        type4: "Vacation", type4Desc: "Paid time off",
+        type5: "Family", type5Desc: "Family matters",
+        type6: "Mental", type6Desc: "Need rest",
+        styleTitle: "🏢 Company Culture",
+        style1: "🏛️ Strict", style1Desc: "Corporate/Big tech",
+        style2: "🏬 Standard", style2Desc: "Regular company",
+        style3: "🏠 Relaxed", style3Desc: "Startup/Small team",
+        countryTitle: "🌍 Location",
+        extraTitle: "💬 Extra Info (Optional)",
+        extraPlaceholder: "e.g. Need half day, already took leave this month, strict manager...",
+        tipsLabel: "💡 Popular Scenarios",
+        tip1: "Sick tomorrow", tip2: "Emergency today", tip3: "Moving day",
+        btnGenerate: "✨ Generate Leave Request",
+        btnGenerating: "Generating...",
+        resultsTitle: "📤 Your Messages",
+        tagFormal: "📝 Formal", hintFormal: "For strict companies",
+        tagCasual: "😊 Casual", hintCasual: "For relaxed companies",
+        tagUrgent: "⚡ Urgent", hintUrgent: "Short & direct",
+        copy: "Copy", regenerate: "🔄 Regenerate", share: "📤 Share",
+        footer: "Smart leave requests · Free · No signup",
+        errEmpty: "Please select leave type",
+        errFail: "Generation failed. Please try again.",
+        copied: "Copied! ✅", linkCopied: "Link copied!",
+      },
+      zh: {
+        subtitle: "生成可信的请假理由。<br>处理病假、事假和突发情况。",
+        badge: "🚀 免费使用",
+        typeTitle: "🏷️ 请假类型",
+        type1: "病假", type1Desc: "身体不舒服",
+        type2: "事假", type2Desc: "私人事务",
+        type3: "临时", type3Desc: "突发情况",
+        type4: "年假", type4Desc: "带薪休息",
+        type5: "家庭", type5Desc: "家里有事",
+        type6: "心理", type6Desc: "需要休息",
+        styleTitle: "🏢 公司氛围",
+        style1: "🏛️ 严格", style1Desc: "国企/外企/大厂",
+        style2: "🏬 一般", style2Desc: "普通公司",
+        style3: "🏠 宽松", style3Desc: "创业/小团队",
+        countryTitle: "🌍 所在地区",
+        extraTitle: "💬 补充信息（可选）",
+        extraPlaceholder: "例如：请半天假、已经请过一次了、领导比较严...",
+        tipsLabel: "💡 热门场景",
+        tip1: "明天请病假", tip2: "今天临时有事", tip3: "搬家请一天",
+        btnGenerate: "✨ 生成请假理由",
+        btnGenerating: "生成中...",
+        resultsTitle: "📤 请假话术",
+        tagFormal: "📝 正式版", hintFormal: "适合严格公司",
+        tagCasual: "😊 轻松版", hintCasual: "适合氛围好的公司",
+        tagUrgent: "⚡ 紧急版", hintUrgent: "简短直接",
+        copy: "复制", regenerate: "🔄 换一批", share: "📤 分享",
+        footer: "智能请假话术 · 免费 · 无需注册",
+        errEmpty: "请选择请假类型",
+        errFail: "生成失败，请重试",
+        copied: "已复制 ✅", linkCopied: "链接已复制！",
+      }
+    };
+
+    let currentLang = 'en';
+    let selectedType = 'Sick Leave';
+    let selectedStyle = 'Standard';
     let loading = false;
+
+    function switchLang(lang) {
+      currentLang = lang;
+      document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.dataset.lang === lang));
+      applyLang();
+    }
+
+    function applyLang() {
+      const t = i18n[currentLang];
+      document.querySelector('[data-i18n="subtitle"]').innerHTML = t.subtitle;
+      document.querySelector('[data-i18n="badge"]').textContent = t.badge;
+      document.querySelector('[data-i18n="typeTitle"]').textContent = t.typeTitle;
+      const types = ['type1','type2','type3','type4','type5','type6'];
+      const typeDescs = ['type1Desc','type2Desc','type3Desc','type4Desc','type5Desc','type6Desc'];
+      types.forEach((k,i) => { document.querySelectorAll('[data-i18n="'+k+'"]')[0].textContent = t[k]; });
+      typeDescs.forEach((k,i) => { document.querySelectorAll('[data-i18n="'+k+'"]')[0].textContent = t[k]; });
+      document.querySelector('[data-i18n="styleTitle"]').textContent = t.styleTitle;
+      ['style1','style2','style3'].forEach((k,i) => { document.querySelectorAll('[data-i18n="'+k+'"]')[0].textContent = t[k]; });
+      ['style1Desc','style2Desc','style3Desc'].forEach((k,i) => { document.querySelectorAll('[data-i18n="'+k+'"]')[0].textContent = t[k]; });
+      document.querySelector('[data-i18n="countryTitle"]').textContent = t.countryTitle;
+      document.querySelector('[data-i18n="extraTitle"]').textContent = t.extraTitle;
+      document.getElementById('extraInfo').placeholder = t.extraPlaceholder;
+      document.querySelector('[data-i18n="tipsLabel"]').textContent = t.tipsLabel;
+      ['tip1','tip2','tip3'].forEach((k,i) => { document.querySelectorAll('[data-i18n="'+k+'"]')[0].textContent = t[k]; });
+      document.getElementById('generateBtn').textContent = loading ? t.btnGenerating : t.btnGenerate;
+      document.querySelector('[data-i18n="resultsTitle"]').textContent = t.resultsTitle;
+      ['tagFormal','tagCasual','tagUrgent'].forEach((k,i) => { document.querySelectorAll('[data-i18n="'+k+'"]')[0].textContent = t[k]; });
+      ['hintFormal','hintCasual','hintUrgent'].forEach((k,i) => { document.querySelectorAll('[data-i18n="'+k+'"]')[0].textContent = t[k]; });
+      document.querySelectorAll('[data-i18n="copy"]').forEach(el => el.textContent = t.copy);
+      document.querySelectorAll('[data-i18n="regenerate"]')[0].textContent = t.regenerate;
+      document.querySelectorAll('[data-i18n="share"]')[0].textContent = t.share;
+      document.querySelector('[data-i18n="footer"]').textContent = t.footer;
+      document.documentElement.lang = currentLang === 'zh' ? 'zh-CN' : 'en';
+    }
+
+    function detectLang() {
+      const browserLang = navigator.language || navigator.userLanguage || 'en';
+      return browserLang.startsWith('zh') ? 'zh' : 'en';
+    }
 
     function selectType(el) {
       document.querySelectorAll('.type-item').forEach(e => e.classList.remove('active'));
@@ -303,8 +424,8 @@
     }
 
     function quickFill(type, style, extra) {
-      document.querySelectorAll('.type-item').forEach(e => e.classList.toggle('active', e.dataset.type === type));
-      document.querySelectorAll('.style-item').forEach(e => e.classList.toggle('active', e.dataset.style === style));
+      document.querySelectorAll('.type-item').forEach(el => el.classList.toggle('active', el.dataset.type === type));
+      document.querySelectorAll('.style-item').forEach(el => el.classList.toggle('active', el.dataset.style === style));
       selectedType = type;
       selectedStyle = style;
       document.getElementById('extraInfo').value = extra || '';
@@ -320,6 +441,7 @@
     async function generate() {
       if (loading) return;
       const errorMsg = document.getElementById('errorMsg');
+      const t = i18n[currentLang];
       errorMsg.classList.remove('show');
 
       const country = document.getElementById('country').value;
@@ -328,21 +450,16 @@
 
       loading = true;
       btn.disabled = true;
-      btn.innerHTML = '<span class="loading"><span class="dot-pulse"></span> 生成中...</span>';
+      btn.innerHTML = `<span class="loading"><span class="dot-pulse"></span> ${t.btnGenerating}</span>`;
 
       try {
         const resp = await fetch('/api/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            leaveType: selectedType,
-            companyStyle: selectedStyle,
-            country,
-            extraInfo,
-          }),
+          body: JSON.stringify({ leaveType: selectedType, companyStyle: selectedStyle, country, extraInfo, lang: currentLang }),
         });
         const data = await resp.json();
-        if (!resp.ok || !data.success) throw new Error(data.error || '生成失败');
+        if (!resp.ok || !data.success) throw new Error(data.error || t.errFail);
 
         document.getElementById('formalText').textContent = data.data.formal;
         document.getElementById('casualText').textContent = data.data.casual;
@@ -350,23 +467,24 @@
         document.getElementById('results').classList.add('show');
         document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       } catch (err) {
-        errorMsg.textContent = err.message || '生成失败，请重试';
+        errorMsg.textContent = err.message || t.errFail;
         errorMsg.classList.add('show');
       } finally {
         loading = false;
         btn.disabled = false;
-        btn.innerHTML = '✨ 生成请假理由';
+        btn.textContent = t.btnGenerate;
       }
     }
 
     function copyText(id) {
       const text = document.getElementById(id).textContent;
-      navigator.clipboard.writeText(text).then(() => showToast('已复制 ✅')).catch(() => {
+      const t = i18n[currentLang];
+      navigator.clipboard.writeText(text).then(() => showToast(t.copied)).catch(() => {
         const ta = document.createElement('textarea');
         ta.value = text; document.body.appendChild(ta);
         ta.select(); document.execCommand('copy');
         document.body.removeChild(ta);
-        showToast('已复制 ✅');
+        showToast(t.copied);
       });
     }
 
@@ -376,12 +494,21 @@
     }
 
     function share() {
+      const t = i18n[currentLang];
       if (navigator.share) {
-        navigator.share({ title: '请假理由生成器', text: '不知道怎么请假？一键生成高通过率请假话术', url: location.href });
+        navigator.share({ title: 'LeaveExcuse AI', text: currentLang === 'zh' ? '请假理由生成器 - 一键生成高通过率请假话术' : 'Professional leave request generator', url: location.href });
       } else {
-        navigator.clipboard.writeText(location.href).then(() => showToast('链接已复制'));
+        navigator.clipboard.writeText(location.href).then(() => showToast(t.linkCopied));
       }
     }
+
+    // Init
+    (function init() {
+      const lang = detectLang();
+      currentLang = lang;
+      document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.dataset.lang === lang));
+      applyLang();
+    })();
   </script>
 </body>
 </html>
