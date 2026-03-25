@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>请假理由生成器 - 高通过率请假话术</title>
+  <meta name="description" content="不知道怎么请假？输入请假类型，一键生成高通过率的请假理由，直接复制发给领导。">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      background: linear-gradient(135deg, #00b894 0%, #00cec9 50%, #0984e3 100%);
+      min-height: 100vh; color: #333;
+    }
+    .container { max-width: 520px; margin: 0 auto; padding: 24px 16px 80px; }
+    .header { text-align: center; padding: 32px 0 24px; }
+    .header h1 { font-size: 28px; color: #fff; font-weight: 700; }
+    .header p { color: rgba(255,255,255,0.8); font-size: 14px; margin-top: 6px; }
+
+    .card {
+      background: #fff; border-radius: 20px; padding: 24px;
+      margin-bottom: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    }
+    .card-title { font-size: 15px; font-weight: 600; margin-bottom: 14px; color: #2d3436; }
+
+    /* 请假类型 */
+    .type-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .type-item {
+      text-align: center; padding: 16px 8px; border: 2px solid #eee;
+      border-radius: 14px; cursor: pointer; transition: all 0.15s;
+    }
+    .type-item:hover { border-color: #81ecec; }
+    .type-item.active { border-color: #00b894; background: #e8fff8; }
+    .type-icon { font-size: 28px; margin-bottom: 4px; }
+    .type-label { font-size: 14px; font-weight: 600; }
+    .type-desc { font-size: 11px; color: #b2bec3; margin-top: 2px; }
+    .type-item.active .type-desc { color: #00b894; }
+
+    /* 公司风格 */
+    .style-list { display: flex; gap: 10px; }
+    .style-item {
+      flex: 1; text-align: center; padding: 14px 8px; border: 2px solid #eee;
+      border-radius: 14px; cursor: pointer; transition: all 0.15s;
+    }
+    .style-item:hover { border-color: #81ecec; }
+    .style-item.active { border-color: #00b894; background: #e8fff8; }
+    .style-label { font-size: 14px; font-weight: 600; }
+    .style-desc { font-size: 11px; color: #b2bec3; margin-top: 2px; }
+    .style-item.active .style-desc { color: #00b894; }
+
+    /* 国家选择 */
+    .country-select {
+      width: 100%; padding: 12px 14px; border: 2px solid #eee; border-radius: 12px;
+      font-size: 15px; outline: none; background: #fff; appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' fill='none' stroke='%23999' stroke-width='1.5'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 14px center;
+      cursor: pointer;
+    }
+    .country-select:focus { border-color: #00b894; }
+
+    /* 补充信息 */
+    .extra-input {
+      width: 100%; padding: 12px 14px; border: 2px solid #eee; border-radius: 12px;
+      font-size: 14px; outline: none; font-family: inherit; resize: none;
+      min-height: 60px; transition: border-color 0.2s;
+    }
+    .extra-input:focus { border-color: #00b894; }
+
+    /* 按钮 */
+    .generate-btn {
+      width: 100%; padding: 16px; background: linear-gradient(135deg, #00b894, #00cec9);
+      color: #fff; font-size: 17px; font-weight: 600; border: none; border-radius: 40px;
+      cursor: pointer; margin: 20px 0; box-shadow: 0 6px 24px rgba(0,184,148,0.35);
+      transition: all 0.15s;
+    }
+    .generate-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 28px rgba(0,184,148,0.45); }
+    .generate-btn:active { transform: scale(0.98); }
+    .generate-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+    .loading { display: inline-flex; align-items: center; gap: 8px; }
+    .dot-pulse {
+      width: 8px; height: 8px; background: #fff; border-radius: 50%;
+      animation: pulse 0.8s infinite alternate;
+    }
+    @keyframes pulse { from { opacity: 0.3; transform: scale(0.8); } to { opacity: 1; transform: scale(1.2); } }
+
+    /* 结果 */
+    .results-section { display: none; margin-top: 8px; }
+    .results-section.show { display: block; animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .results-title { font-size: 18px; font-weight: 700; text-align: center; margin-bottom: 16px; color: #fff; }
+
+    .result-card {
+      background: #fff; border-radius: 20px; padding: 20px; margin-bottom: 14px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.06); border-left: 5px solid #dfe6e9;
+    }
+    .result-card.formal { border-left-color: #0984e3; }
+    .result-card.casual { border-left-color: #fdcb6e; }
+    .result-card.emergency { border-left-color: #e17055; }
+    .result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .result-tag { font-size: 13px; font-weight: 600; padding: 3px 10px; border-radius: 6px; }
+    .tag-formal { background: #e8f4ff; color: #0984e3; }
+    .tag-casual { background: #fef3cd; color: #e17055; }
+    .tag-emergency { background: #ffe0d9; color: #d63031; }
+    .result-hint { font-size: 12px; color: #b2bec3; }
+    .result-text { font-size: 15px; line-height: 1.7; color: #2d3436; padding: 8px 0; white-space: pre-wrap; }
+    .copy-btn {
+      display: flex; align-items: center; justify-content: flex-end; gap: 4px;
+      font-size: 13px; color: #00b894; cursor: pointer; padding-top: 10px;
+      border-top: 1px solid #f0f0f0;
+    }
+    .copy-btn:hover { opacity: 0.7; }
+
+    .result-actions { display: flex; justify-content: center; gap: 12px; margin-top: 16px; }
+    .action-btn {
+      padding: 10px 20px; background: rgba(255,255,255,0.95); border: 1px solid #e0e0e0;
+      border-radius: 24px; font-size: 13px; color: #636e72; cursor: pointer; transition: all 0.15s;
+    }
+    .action-btn:hover { border-color: #00b894; color: #00b894; background: #e8fff8; }
+
+    .error-msg {
+      display: none; padding: 12px 16px; background: #fff5f5; border: 1px solid #feb2b2;
+      border-radius: 12px; color: #c53030; font-size: 14px; margin-bottom: 12px;
+    }
+    .error-msg.show { display: block; }
+
+    .footer { text-align: center; padding: 32px 0 16px; }
+    .footer-text { font-size: 12px; color: rgba(255,255,255,0.5); }
+
+    .toast {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      background: rgba(0,0,0,0.75); color: #fff; padding: 12px 28px; border-radius: 8px;
+      font-size: 14px; z-index: 999; display: none;
+    }
+    .toast.show { display: block; animation: fadeIn 0.2s ease; }
+
+    /* 小贴士 */
+    .tips { margin-top: 8px; }
+    .tips-label { font-size: 13px; color: rgba(255,255,255,0.7); margin-bottom: 10px; }
+    .tip-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .tip-chip {
+      padding: 8px 14px; background: rgba(255,255,255,0.95); border: 1px solid #e0e0e0;
+      border-radius: 12px; font-size: 13px; color: #636e72; cursor: pointer; transition: all 0.15s;
+    }
+    .tip-chip:hover { border-color: #00b894; color: #00b894; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📋 请假理由生成器</h1>
+      <p>一键生成高通过率请假话术</p>
+    </div>
+
+    <!-- 请假类型 -->
+    <div class="card">
+      <div class="card-title">🏷️ 请假类型</div>
+      <div class="type-grid">
+        <div class="type-item active" data-type="病假" onclick="selectType(this)">
+          <div class="type-icon">🤒</div>
+          <div class="type-label">病假</div>
+          <div class="type-desc">身体不舒服</div>
+        </div>
+        <div class="type-item" data-type="事假" onclick="selectType(this)">
+          <div class="type-icon">📋</div>
+          <div class="type-label">事假</div>
+          <div class="type-desc">私人事务</div>
+        </div>
+        <div class="type-item" data-type="临时请假" onclick="selectType(this)">
+          <div class="type-icon">⚡</div>
+          <div class="type-label">临时</div>
+          <div class="type-desc">突发情况</div>
+        </div>
+        <div class="type-item" data-type="年假" onclick="selectType(this)">
+          <div class="type-icon">🏖️</div>
+          <div class="type-label">年假</div>
+          <div class="type-desc">带薪休息</div>
+        </div>
+        <div class="type-item" data-type="家庭原因" onclick="selectType(this)">
+          <div class="type-icon">👨‍👩‍👧</div>
+          <div class="type-label">家庭</div>
+          <div class="type-desc">家里有事</div>
+        </div>
+        <div class="type-item" data-type="心理健康假" onclick="selectType(this)">
+          <div class="type-icon">🧘</div>
+          <div class="type-label">心理健康</div>
+          <div class="type-desc">需要休息</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 公司风格 -->
+    <div class="card">
+      <div class="card-title">🏢 公司氛围</div>
+      <div class="style-list">
+        <div class="style-item" data-style="严格" onclick="selectStyle(this)">
+          <div class="style-label">🏛️ 严格</div>
+          <div class="style-desc">国企/外企/大厂</div>
+        </div>
+        <div class="style-item active" data-style="一般" onclick="selectStyle(this)">
+          <div class="style-label">🏬 一般</div>
+          <div class="style-desc">普通公司</div>
+        </div>
+        <div class="style-item" data-style="宽松" onclick="selectStyle(this)">
+          <div class="style-label">🏠 宽松</div>
+          <div class="style-desc">创业/小团队</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 国家 + 补充 -->
+    <div class="card">
+      <div class="card-title">🌍 所在地区</div>
+      <select class="country-select" id="country">
+        <option value="中国">🇨🇳 中国</option>
+        <option value="美国">🇺🇸 美国</option>
+        <option value="日本">🇯🇵 日本</option>
+        <option value="韩国">🇰🇷 韩国</option>
+        <option value="英国">🇬🇧 英国</option>
+        <option value="澳大利亚">🇦🇺 澳大利亚</option>
+        <option value="新加坡">🇸🇬 新加坡</option>
+        <option value="德国">🇩🇪 德国</option>
+        <option value="其他">🌐 其他</option>
+      </select>
+      <div style="margin-top: 14px;">
+        <div class="card-title">💬 补充信息（可选）</div>
+        <textarea class="extra-input" id="extraInfo" placeholder="比如：请半天假、已经请过一次了、领导比较严..."></textarea>
+      </div>
+    </div>
+
+    <!-- 小贴士 -->
+    <div class="tips">
+      <div class="tips-label">💡 热门场景</div>
+      <div class="tip-chips">
+        <div class="tip-chip" onclick="quickFill('病假','一般','想请明天一天')">明天想请病假</div>
+        <div class="tip-chip" onclick="quickFill('临时请假','严格','下午要走')">下午临时有事</div>
+        <div class="tip-chip" onclick="quickFill('事假','宽松','搬家')">搬家请一天</div>
+      </div>
+    </div>
+
+    <div class="error-msg" id="errorMsg"></div>
+
+    <button class="generate-btn" id="generateBtn" onclick="generate()">✨ 生成请假理由</button>
+
+    <!-- 结果 -->
+    <div class="results-section" id="results">
+      <div class="results-title">📤 三种请假话术</div>
+
+      <div class="result-card formal">
+        <div class="result-header">
+          <span class="result-tag tag-formal">📝 正式版</span>
+          <span class="result-hint">适合严格公司</span>
+        </div>
+        <div class="result-text" id="formalText"></div>
+        <div class="copy-btn" onclick="copyText('formalText')">📋 复制</div>
+      </div>
+
+      <div class="result-card casual">
+        <div class="result-header">
+          <span class="result-tag tag-casual">😊 轻松版</span>
+          <span class="result-hint">适合氛围好的公司</span>
+        </div>
+        <div class="result-text" id="casualText"></div>
+        <div class="copy-btn" onclick="copyText('casualText')">📋 复制</div>
+      </div>
+
+      <div class="result-card emergency">
+        <div class="result-header">
+          <span class="result-tag tag-emergency">⚡ 紧急版</span>
+          <span class="result-hint">临时突发直接发</span>
+        </div>
+        <div class="result-text" id="emergencyText"></div>
+        <div class="copy-btn" onclick="copyText('emergencyText')">📋 复制</div>
+      </div>
+
+      <div class="result-actions">
+        <div class="action-btn" onclick="retry()">🔄 换一批</div>
+        <div class="action-btn" onclick="share()">📤 分享</div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div class="footer-text">智能匹配请假话术，助你体面请假 ✌️</div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    let selectedType = '病假';
+    let selectedStyle = '一般';
+    let loading = false;
+
+    function selectType(el) {
+      document.querySelectorAll('.type-item').forEach(e => e.classList.remove('active'));
+      el.classList.add('active');
+      selectedType = el.dataset.type;
+    }
+
+    function selectStyle(el) {
+      document.querySelectorAll('.style-item').forEach(e => e.classList.remove('active'));
+      el.classList.add('active');
+      selectedStyle = el.dataset.style;
+    }
+
+    function quickFill(type, style, extra) {
+      document.querySelectorAll('.type-item').forEach(e => e.classList.toggle('active', e.dataset.type === type));
+      document.querySelectorAll('.style-item').forEach(e => e.classList.toggle('active', e.dataset.style === style));
+      selectedType = type;
+      selectedStyle = style;
+      document.getElementById('extraInfo').value = extra || '';
+      generate();
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg; t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 1500);
+    }
+
+    async function generate() {
+      if (loading) return;
+      const errorMsg = document.getElementById('errorMsg');
+      errorMsg.classList.remove('show');
+
+      const country = document.getElementById('country').value;
+      const extraInfo = document.getElementById('extraInfo').value.trim();
+      const btn = document.getElementById('generateBtn');
+
+      loading = true;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="loading"><span class="dot-pulse"></span> 生成中...</span>';
+
+      try {
+        const resp = await fetch('/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            leaveType: selectedType,
+            companyStyle: selectedStyle,
+            country,
+            extraInfo,
+          }),
+        });
+        const data = await resp.json();
+        if (!resp.ok || !data.success) throw new Error(data.error || '生成失败');
+
+        document.getElementById('formalText').textContent = data.data.formal;
+        document.getElementById('casualText').textContent = data.data.casual;
+        document.getElementById('emergencyText').textContent = data.data.emergency;
+        document.getElementById('results').classList.add('show');
+        document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      } catch (err) {
+        errorMsg.textContent = err.message || '生成失败，请重试';
+        errorMsg.classList.add('show');
+      } finally {
+        loading = false;
+        btn.disabled = false;
+        btn.innerHTML = '✨ 生成请假理由';
+      }
+    }
+
+    function copyText(id) {
+      const text = document.getElementById(id).textContent;
+      navigator.clipboard.writeText(text).then(() => showToast('已复制 ✅')).catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = text; document.body.appendChild(ta);
+        ta.select(); document.execCommand('copy');
+        document.body.removeChild(ta);
+        showToast('已复制 ✅');
+      });
+    }
+
+    function retry() {
+      document.getElementById('results').classList.remove('show');
+      generate();
+    }
+
+    function share() {
+      if (navigator.share) {
+        navigator.share({ title: '请假理由生成器', text: '不知道怎么请假？一键生成高通过率请假话术', url: location.href });
+      } else {
+        navigator.clipboard.writeText(location.href).then(() => showToast('链接已复制'));
+      }
+    }
+  </script>
+</body>
+</html>
